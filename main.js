@@ -31,13 +31,17 @@ async function handleEvent(event) {
   const msg = event.message.text
 
   if (msg.includes('test')) {
+    const messages = [];
+    
     for (let i = 1; i <= 3; i++) {
-      const m = { type: 'text', text: i.toString() }
-      await client.replyMessage(event.replyToken, m);
+      messages.push({
+        type: 'text',
+        text: i.toString()
+      });
     }
-    doPost()
+    await client.replyMessage(event.replyToken, messages);
   }
-  else{
+  else {
     const echo = { type: 'text', text: msg };
     //return client.replyMessage(event.replyToken, echo);
   }
