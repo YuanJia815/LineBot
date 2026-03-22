@@ -1,6 +1,7 @@
 import dotenv from 'dotenv'
 import express from 'express'
 import line from '@line/bot-sdk'
+import axios from 'axios'
 
 dotenv.config()
 
@@ -34,73 +35,17 @@ async function handleEvent(event) {
     return client.replyMessage(event.replyToken, weather);
   }
   if (msg.includes('test')) {
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 3; i+=2) {
       const m = { type: 'text', text: i.toString() }
       await client.replyMessage(event.replyToken, m);
     }
-  }
-  else if ( msg.length>1 && (msg.includes('?') || msg.includes('嗎'))) {
-    const bubble = {
-      type: 'bubble',
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: `${msg} ?`,
-            margin: 'md',
-          },
-          {
-            type: 'spacer',
-          },
-        ]
-      },
-      footer: {
-        type: 'box',
-        layout: 'horizontal',
-        spacing: 'sm',
-        contents: [
-          {
-            type: 'button',
-            action: {
-              type: 'message',
-              label: 'Yes',
-              text: '是的',
-            },
-            height: 'sm',
-          },
-          {
-            type: 'button',
-            action: {
-              type: 'message',
-              label: 'No',
-              text: '不',
-            },
-            height: 'sm',
-          },
-        ],
-        flex: 0,
-      },
-      styles: {
-        footer: {
-          separator: true,
-        },
-      },
-    };
-
-    return client.replyMessage(event.replyToken, {
-      type: 'flex',
-      altText: 'Confirmation',
-      contents: bubble,
-    });
+    doPost()
   }
   else{
     const echo = { type: 'text', text: msg };
     return client.replyMessage(event.replyToken, echo);
   }
 }
-
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
