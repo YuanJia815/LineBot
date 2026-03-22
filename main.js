@@ -30,12 +30,8 @@ async function handleEvent(event) {
   }
   const msg = event.message.text
 
-  if (msg.includes('天氣')) {
-    const weather = { type: 'text', text: 'https://www.cwb.gov.tw/V8/C/W/Town/Town.html?TID=6800900' };
-    return client.replyMessage(event.replyToken, weather);
-  }
   if (msg.includes('test')) {
-    for (let i = 1; i <= 3; i+=2) {
+    for (let i = 1; i <= 3; i++) {
       const m = { type: 'text', text: i.toString() }
       await client.replyMessage(event.replyToken, m);
     }
@@ -43,7 +39,7 @@ async function handleEvent(event) {
   }
   else{
     const echo = { type: 'text', text: msg };
-    return client.replyMessage(event.replyToken, echo);
+    //return client.replyMessage(event.replyToken, echo);
   }
 }
 
