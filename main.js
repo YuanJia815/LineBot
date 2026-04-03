@@ -13,6 +13,7 @@ const config = {
 const client = new line.Client(config);
 
 const app = express();
+console.log('ff');
 
 app.post('/callback', line.middleware(config), (req, res) => {
   Promise
@@ -29,7 +30,7 @@ async function handleEvent(event) {
     return Promise.resolve(null)
   }
   const msg = event.message.text
-  console.log('ff');
+  
   if (msg.includes('test')) {
     const messages = [];
     
