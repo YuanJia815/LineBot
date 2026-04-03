@@ -1,29 +1,33 @@
-import dotenv from 'dotenv'
 import express from 'express'
 import line from '@line/bot-sdk'
-import mqtt from 'mqtt'
-
-dotenv.config()
-
-const config = {
-  channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
-  channelSecret: process.env.CHANNEL_SECRET,
-};
-
-const client = new line.Client(config);
+import { reply } from './line.js';
 
 const app = express();
-console.log('ff');
 
-app.post('/callback', line.middleware(config), (req, res) => {
-  Promise
-    .all(req.body.events.map(handleEvent))
-    .then((result) => res.json(result))
-    .catch((err) => {
-      console.error(err);
-      res.status(500).end();
-    });
+app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.sendStatus(200);
 });
+
+app.post('/callback', async (req, res) => {
+  const events = req.body.events || [];
+  const replies = events
+    .filter(({ type }) => type === 'message')
+    .map(({ replyToken, message }) => reply({
+      replyToken,
+      messages: [
+        {
+          type: 'text',
+          text: message.text,
+        },
+      ],
+    }));
+  await Promise.all(replies);
+  res.sendStatus(200);
+});
+
+export default app;
 
 async function handleEvent(event) {
   if (event.type !== 'message' || event.message.type !== 'text') {
@@ -48,7 +52,3 @@ async function handleEvent(event) {
   }
 }
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`listening on ${port}`);
-});
