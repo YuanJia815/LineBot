@@ -29,7 +29,7 @@ async function handleEvent(event) {
     return Promise.resolve(null)
   }
   const msg = event.message.text
-
+  console.log('ff');
   if (msg.includes('test')) {
     const messages = [];
     
