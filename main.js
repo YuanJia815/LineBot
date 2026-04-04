@@ -66,7 +66,9 @@ async function handleEvent(event) {
     return Promise.resolve(null); // 避免整個 webhook 爆掉
   }
 }
-
+app.get('/', (req, res) => {
+  res.send('oK');
+});
 //===================================== Start Server =====================================//
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
