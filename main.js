@@ -62,30 +62,36 @@ app.post('/callback', line.middleware(config), (req, res) => {
 });
 //--------------------------------- event handler
 async function handleEvent(event) {
-  if (event.type !== 'message' || event.message.type !== 'text') {
-    return Promise.resolve(null)
-  }
-  const msg = event.message.text
+  try {
+    if (event.type !== 'message' || event.message.type !== 'text') {
+      return Promise.resolve(null);
+    }
+    const msg = event.message.text;
 
-  if (msg.includes('test')) {
-    const messages = [];
-    
-    for (let i = 1; i <= 3; i++) {
-      messages.push({
+    if (msg.includes('test')) {
+      const messages = Array.from({ length: 3 }, (_, i) => ({
         type: 'text',
-        text: i.toString()
+        text: (i + 1).toString()
+      }));
+      return lineClient.replyMessage(event.replyToken, messages);
+    }
+
+    if (msg.includes('open')) {
+      mqttClient.publish('gate/control', 'open');
+
+      return lineClient.replyMessage(event.replyToken, {
+        type: 'text',
+        text: 'Gate opened!'
       });
     }
-    await lineClient.replyMessage(event.replyToken, messages);
-  }
-  else if (msg.includes('open')) {
-    mqttClient.publish('gate/control', 'open');
-    const echo = { type: 'text', text: 'Gate opened!' };
-    await lineClient.replyMessage(event.replyToken, echo);
-  }
-  else {
-    const echo = { type: 'text', text: msg };
-    //return lineClient.replyMessage(event.replyToken, echo);
+
+    return lineClient.replyMessage(event.replyToken, {
+      type: 'text',
+      text: msg
+    });
+  } catch (err) {
+    console.error("handleEvent error:", err);
+    return Promise.resolve(null); // 避免整個 webhook 爆掉
   }
 }
 
