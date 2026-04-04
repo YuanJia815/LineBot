@@ -5,45 +5,17 @@ import mqtt from 'mqtt'
 
 dotenv.config();
 const app = express();
-//app.use(express.json());
+
 //===================================== MQTT Setup =====================================//
 const mqttClient = mqtt.connect(process.env.MQTT_URL, {
   username: process.env.MQTT_USERNAME,
   password: process.env.MQTT_PASSWORD,
   port: 8883,
 });
-mqttClient.on("connect", () => {
-  console.log("MQTT connected");
-  mqttClient.publish("gate/control", "open");
-});
-mqttClient.on('reconnect', () => {
-  console.log('🔄 reconnecting...');
-});
-mqttClient.on("error", (err) => {
-  console.log("MQTT error:", err);
-});
-//===================================== HTTP API Setup =====================================//
-app.get('/test', (req, res) => {
-  res.send('人生就像泡麵三分鐘熱度然後後悔又開始懷疑');
-});
+mqttClient.on("connect", () => { console.log("MQTT connected");});
+mqttClient.on('reconnect', () => { console.log('🔄 reconnecting...');});
+mqttClient.on("error", (err) => { console.log("MQTT error:", err);});
 
-app.post('/gate/control', (req, res) => {
-  const { action } = req.body;
-
-  if (!mqttClient.connected) {
-    return res.status(500).send('MQTT not connected');
-  }
-
-  if (!["open", "close", "stop"].includes(action)) {
-    return res.status(400).send('Invalid action');
-  }
-
-  mqttClient.publish('gate/control', action);
-
-  res.send(`
-    <h1 style="font-size:50px;">Gate ${action}</h1>
-  `);
-});
 //===================================== Line Bot =====================================//
 const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
