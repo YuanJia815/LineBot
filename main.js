@@ -5,7 +5,7 @@ import mqtt from 'mqtt'
 
 dotenv.config();
 const app = express();
-app.use(express.json());
+//app.use(express.json());
 //===================================== MQTT Setup =====================================//
 const mqttClient = mqtt.connect(process.env.MQTT_URL, {
   username: process.env.MQTT_USERNAME,
