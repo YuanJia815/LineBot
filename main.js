@@ -3,6 +3,7 @@ import express from 'express'
 import line from '@line/bot-sdk'
 import mqtt from 'mqtt'
 
+dotenv.config();
 const app = express();
 app.use(express.json());
 //===================================== MQTT Setup =====================================//
@@ -40,11 +41,10 @@ app.post('/gate/control', (req, res) => {
   mqttClient.publish('gate/control', action);
 
   res.send(`
-    <h1 style="font-size:50px;">Gate ${state}</h1>
+    <h1 style="font-size:50px;">Gate ${action}</h1>
   `);
 });
 //===================================== Line Bot =====================================//
-dotenv.config()
 const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
   channelSecret: process.env.CHANNEL_SECRET,
