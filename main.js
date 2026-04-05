@@ -35,9 +35,6 @@ app.post('/callback', line.middleware(config), (req, res) => {
 //--------------------------------- event handler
 async function handleEvent(event) {
   try {
-    const userId = event.source.userId;
-    console.log('取得 userId:', userId);
-
     if (event.type !== 'message' || event.message.type !== 'text') {
       return Promise.resolve(null);
     }
@@ -52,7 +49,10 @@ async function handleEvent(event) {
     }
 
     if (msg.includes('open')) {
+      const userId = event.source.userId;
+      
       mqttClient.publish('gate/control', 'open');
+      pushMessage(userId, 'Gate opening command sent!');
 
       return lineClient.replyMessage(event.replyToken, {
         type: 'text',
