@@ -12,9 +12,9 @@ const mqttClient = mqtt.connect(process.env.MQTT_URL, {
   password: process.env.MQTT_PASSWORD,
   port: 8883,
 });
-mqttClient.on("connect", () => { console.log("MQTT connected");});
-mqttClient.on('reconnect', () => { console.log('🔄 reconnecting...');});
-mqttClient.on("error", (err) => { console.log("MQTT error:", err);});
+mqttClient.on("connect", () => { console.log("MQTT connected"); });
+mqttClient.on('reconnect', () => { console.log('🔄 reconnecting...'); });
+mqttClient.on("error", (err) => { console.log("MQTT error:", err); });
 
 //===================================== Line Bot =====================================//
 const config = {
@@ -35,6 +35,9 @@ app.post('/callback', line.middleware(config), (req, res) => {
 //--------------------------------- event handler
 async function handleEvent(event) {
   try {
+    const userId = event.source.userId;
+    console.log('取得 userId:', userId);
+
     if (event.type !== 'message' || event.message.type !== 'text') {
       return Promise.resolve(null);
     }
@@ -56,21 +59,29 @@ async function handleEvent(event) {
         text: 'Gate opened!'
       });
     }
-
-    return lineClient.replyMessage(event.replyToken, {
-      type: 'text',
-      text: msg
-    });
+    return
+    // return lineClient.replyMessage(event.replyToken, {
+    //   type: 'text',
+    //   text: msg
+    // });
   } catch (err) {
     console.error("handleEvent error:", err);
     return Promise.resolve(null); // 避免整個 webhook 爆掉
   }
 }
+
+// 主動發送
+async function pushMessage(userId, text) {
+  await lineClient.pushMessage(userId, {
+    type: 'text',
+    text: text
+  });
+}
+//===================================== Start Server =====================================//
+const port = process.env.PORT || 3000;
 app.get('/', (req, res) => {
   res.send('oK');
 });
-//===================================== Start Server =====================================//
-const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`listening on ${port}`);
 });
