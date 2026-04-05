@@ -13,7 +13,7 @@ const mqttClient = mqtt.connect(process.env.MQTT_URL, {
   port: 8883,
 });
 mqttClient.on("connect", () => { 
-  mqttClient.subscribe('gate/#');
+  mqttClient.subscribe('gate/status');
   console.log("MQTT connected");
  });
 mqttClient.on('reconnect', () => { console.log('🔄 reconnecting...'); });
