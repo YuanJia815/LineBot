@@ -12,10 +12,24 @@ const mqttClient = mqtt.connect(process.env.MQTT_URL, {
   password: process.env.MQTT_PASSWORD,
   port: 8883,
 });
-mqttClient.on("connect", () => { console.log("MQTT connected"); });
+mqttClient.on("connect", () => { 
+  mqttClient.subscribe('gate/#');
+  console.log("MQTT connected");
+ });
 mqttClient.on('reconnect', () => { console.log('🔄 reconnecting...'); });
 mqttClient.on("error", (err) => { console.log("MQTT error:", err); });
 
+mqttClient.on("message", async (topic, message) => {
+  const msg = message.toString();
+
+    // 假設你已經存好 userId
+  const userId = process.env.USER_ID; // 從環境變數讀取 userId
+
+  await lineClient.pushMessage(userId, {
+    type: 'text',
+    text: `${topic} ： ${msg}`
+  });
+});
 //===================================== Line Bot =====================================//
 const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
@@ -51,12 +65,11 @@ async function handleEvent(event) {
     if (msg.includes('open')) {
       const userId = event.source.userId;
       
-      mqttClient.publish('gate/control', 'open');
-      pushMessage(userId, 'Gate opening command sent!');
+      mqttClient.publish('gate/open', 'open');
 
       return lineClient.replyMessage(event.replyToken, {
         type: 'text',
-        text: 'Gate opened!'
+        text: 'Gate opening command sent'
       });
     }
     return
