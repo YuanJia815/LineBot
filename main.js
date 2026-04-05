@@ -66,11 +66,12 @@ async function handleEvent(event) {
       const userId = event.source.userId;
       
       mqttClient.publish('gate/open', 'open');
-
-      return lineClient.replyMessage(event.replyToken, {
-        type: 'text',
-        text: 'Gate opening command sent'
-      });
+      
+      return
+      // return lineClient.replyMessage(event.replyToken, {
+      //   type: 'text',
+      //   text: 'Gate opening command sent'
+      // });
     }
     return
     // return lineClient.replyMessage(event.replyToken, {
