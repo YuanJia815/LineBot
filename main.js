@@ -14,6 +14,7 @@ const mqttClient = mqtt.connect(process.env.MQTT_URL, {
 });
 mqttClient.on("connect", () => { 
   mqttClient.subscribe('gate/status');
+  mqttClient.subscribe('button/status');
   console.log("MQTT connected");
  });
 mqttClient.on('reconnect', () => { console.log('🔄 reconnecting...'); });
@@ -66,7 +67,7 @@ async function handleEvent(event) {
       const userId = event.source.userId;
       
       mqttClient.publish('gate/open', 'open');
-      
+
       return
       // return lineClient.replyMessage(event.replyToken, {
       //   type: 'text',
