@@ -26,10 +26,15 @@ mqttClient.on("message", async (topic, message) => {
 
   const userId = process.env.USER_ID; // 從環境變數讀取 userId
 
+  const location = data.location
+    .replace(/\n/g, ' ')
+    .replace(/\b\d{3,6}\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
   await lineClient.pushMessage(userId, {
     type: 'text',
-    text: `[${topic}]    Device: ${data.deviceName}\n
-    Action: ${data.action}\nLocation: ${data.location}`
+    text: `[ ${topic} ]  Device: ${data.deviceName}\nAction: ${data.action}\n${location}`
   });
 });
 //===================================== Line Bot =====================================//
