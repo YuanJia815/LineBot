@@ -28,7 +28,8 @@ mqttClient.on("message", async (topic, message) => {
 
   await lineClient.pushMessage(userId, {
     type: 'text',
-    text: `[${topic}]\nDevice: ${data.deviceName}\nAction: ${data.action}\nLocation: ${data.location}`
+    text: `[${topic}]    Device: ${data.deviceName}\n
+    Action: ${data.action}\nLocation: ${data.location}`
   });
 });
 //===================================== Line Bot =====================================//
@@ -66,14 +67,16 @@ async function handleEvent(event) {
     if (msg.includes('open')) {
       const userId = event.source.userId;
       
-      mqttClient.publish('gate/open', 'open');
-
+      mqttClient.publish('gate/open', '');
       return
-      // return lineClient.replyMessage(event.replyToken, {
-      //   type: 'text',
-      //   text: 'Gate opening command sent'
-      // });
     }
+    if (msg.includes('close')) {
+      const userId = event.source.userId;
+      
+      mqttClient.publish('gate/close', '');
+      return
+    }
+    
     return
     // return lineClient.replyMessage(event.replyToken, {
     //   type: 'text',
