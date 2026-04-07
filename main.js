@@ -22,13 +22,13 @@ mqttClient.on("error", (err) => { console.log("MQTT error:", err); });
 
 mqttClient.on("message", async (topic, message) => {
   const msg = message.toString();
+  const data = JSON.parse(msg);
 
-    // 假設你已經存好 userId
   const userId = process.env.USER_ID; // 從環境變數讀取 userId
 
   await lineClient.pushMessage(userId, {
     type: 'text',
-    text: `${topic} ： ${msg}`
+    text: `[${topic}]\nDevice: ${data.deviceName}\nAction: ${data.action}\nLocation: ${data.location}`
   });
 });
 //===================================== Line Bot =====================================//
