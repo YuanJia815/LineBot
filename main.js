@@ -12,11 +12,11 @@ const mqttClient = mqtt.connect(process.env.MQTT_URL, {
   password: process.env.MQTT_PASSWORD,
   port: 8883,
 });
-mqttClient.on("connect", () => { 
+mqttClient.on("connect", () => {
   mqttClient.subscribe('gate/status');
   mqttClient.subscribe('button/status');
   console.log("MQTT connected");
- });
+});
 mqttClient.on('reconnect', () => { console.log('🔄 reconnecting...'); });
 mqttClient.on("error", (err) => { console.log("MQTT error:", err); });
 
@@ -32,10 +32,83 @@ mqttClient.on("message", async (topic, message) => {
     .replace(/\s+/g, ' ')
     .trim();
 
+  // await lineClient.pushMessage(userId, {
+  //   type: 'text',
+  //   text: `[ ${topic} ]  Device: ${data.deviceName}\nAction: ${data.action}\n${location}`
+  // });
   await lineClient.pushMessage(userId, {
-    type: 'text',
-    text: `[ ${topic} ]  Device: ${data.deviceName}\nAction: ${data.action}\n${location}`
+    "type": "bubble",
+    "body": {
+      "type": "box",
+      "layout": "vertical",
+      "contents": [
+        {
+          "type": "text",
+          "text": `${data.action}`, // title action
+          "weight": "bold",
+          "size": "xl"
+        },
+        {
+          "type": "box",
+          "layout": "vertical",
+          "margin": "lg",
+          "spacing": "sm",
+          "contents": [
+            {
+              "type": "box",
+              "layout": "baseline",
+              "spacing": "sm",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Device",
+                  "color": "#aaaaaa",
+                  "size": "xs",
+                  "flex": 1
+                },
+                {
+                  "type": "text",
+                  "text": `${data.deviceName}`,// deviceName
+                  "wrap": true,
+                  "color": "#666666",
+                  "size": "sm",
+                  "flex": 5
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "baseline",
+              "spacing": "sm",
+              "contents": [
+                {
+                  "type": "text",
+                  "text": "Place",
+                  "color": "#aaaaaa",
+                  "size": "xs",
+                  "flex": 1
+                },
+                {
+                  "type": "text",
+                  "text": `${location}`, // location
+                  "wrap": true,
+                  "color": "#666666",
+                  "size": "sm",
+                  "flex": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "styles": {
+      "body": {
+        "backgroundColor": "#d5e1e1"
+      }
+    }
   });
+
 });
 //===================================== Line Bot =====================================//
 const config = {
@@ -71,17 +144,17 @@ async function handleEvent(event) {
 
     if (msg.includes('open')) {
       const userId = event.source.userId;
-      
+
       mqttClient.publish('gate/open', '');
       return
     }
     if (msg.includes('close')) {
       const userId = event.source.userId;
-      
+
       mqttClient.publish('gate/close', '');
       return
     }
-    
+
     return
     // return lineClient.replyMessage(event.replyToken, {
     //   type: 'text',
