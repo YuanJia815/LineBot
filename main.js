@@ -22,9 +22,17 @@ mqttClient.on("error", (err) => { console.log("MQTT error:", err); });
 
 mqttClient.on("message", async (topic, message) => {
   const msg = message.toString();
-  const data = JSON.parse(msg);
 
-  const userId = process.env.USER_ID; // 從環境變數讀取 userId
+  let data;
+  try {
+    data = JSON.parse(msg);
+  } catch (err) {
+    console.error("JSON parse error:", msg);
+    return;
+  }
+
+  const userId = process.env.USER_ID;// 從環境變數讀取 userId
+  if (!userId) return; 
 
   const location = data.location
     .replace(/\n/g, ' ')
@@ -37,74 +45,78 @@ mqttClient.on("message", async (topic, message) => {
   //   text: `[ ${topic} ]  Device: ${data.deviceName}\nAction: ${data.action}\n${location}`
   // });
   await lineClient.pushMessage(userId, {
-    "type": "bubble",
-    "body": {
-      "type": "box",
-      "layout": "vertical",
-      "contents": [
-        {
-          "type": "text",
-          "text": `${data.action}`, // title action
-          "weight": "bold",
-          "size": "xl"
-        },
-        {
-          "type": "box",
-          "layout": "vertical",
-          "margin": "lg",
-          "spacing": "sm",
-          "contents": [
-            {
-              "type": "box",
-              "layout": "baseline",
-              "spacing": "sm",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "Device",
-                  "color": "#aaaaaa",
-                  "size": "xs",
-                  "flex": 1
-                },
-                {
-                  "type": "text",
-                  "text": `${data.deviceName}`,// deviceName
-                  "wrap": true,
-                  "color": "#666666",
-                  "size": "sm",
-                  "flex": 5
-                }
-              ]
-            },
-            {
-              "type": "box",
-              "layout": "baseline",
-              "spacing": "sm",
-              "contents": [
-                {
-                  "type": "text",
-                  "text": "Place",
-                  "color": "#aaaaaa",
-                  "size": "xs",
-                  "flex": 1
-                },
-                {
-                  "type": "text",
-                  "text": `${location}`, // location
-                  "wrap": true,
-                  "color": "#666666",
-                  "size": "sm",
-                  "flex": 5
-                }
-              ]
-            }
-          ]
+    type: "flex",
+    altText: `${data.action}`,
+    contents: {
+      type: "bubble",
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: `${data.action}`,
+            weight: "bold",
+            size: "xl"
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            margin: "lg",
+            spacing: "sm",
+            contents: [
+              {
+                type: "box",
+                layout: "baseline",
+                spacing: "sm",
+                contents: [
+                  {
+                    type: "text",
+                    text: "Device",
+                    color: "#aaaaaa",
+                    size: "xs",
+                    flex: 1
+                  },
+                  {
+                    type: "text",
+                    text: `${data.deviceName}`,
+                    wrap: true,
+                    color: "#666666",
+                    size: "sm",
+                    flex: 5
+                  }
+                ]
+              },
+              {
+                type: "box",
+                layout: "baseline",
+                spacing: "sm",
+                contents: [
+                  {
+                    type: "text",
+                    text: "Place",
+                    color: "#aaaaaa",
+                    size: "xs",
+                    flex: 1
+                  },
+                  {
+                    type: "text",
+                    text: `${location}`,
+                    wrap: true,
+                    color: "#666666",
+                    size: "sm",
+                    flex: 5
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      styles: {
+        body: {
+          backgroundColor: "#d5e1e1"
         }
-      ]
-    },
-    "styles": {
-      "body": {
-        "backgroundColor": "#d5e1e1"
       }
     }
   });
