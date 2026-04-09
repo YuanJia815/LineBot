@@ -44,84 +44,8 @@ mqttClient.on("message", async (topic, message) => {
   // await lineClient.pushMessage(userId, {
   //   type: 'text',
   //   text: `[ ${topic} ]  Device: ${data.deviceName}\nAction: ${data.action}\n${location}`
-  // });
-  await lineClient.pushMessage(userId, {
-    type: "flex",
-    altText: `${data.action}`,
-    contents: {
-      type: "bubble",
-      body: {
-        type: "box",
-        layout: "vertical",
-        contents: [
-          {
-            type: "text",
-            text: `${data.action}`,
-            weight: "bold",
-            size: "xl"
-          },
-          {
-            type: "box",
-            layout: "vertical",
-            margin: "lg",
-            spacing: "sm",
-            contents: [
-              {
-                type: "box",
-                layout: "baseline",
-                spacing: "sm",
-                contents: [
-                  {
-                    type: "text",
-                    text: "Device",
-                    color: "#aaaaaa",
-                    size: "xs",
-                    flex: 1
-                  },
-                  {
-                    type: "text",
-                    text: `${data.deviceName}`,
-                    wrap: true,
-                    color: "#666666",
-                    size: "sm",
-                    flex: 5
-                  }
-                ]
-              },
-              {
-                type: "box",
-                layout: "baseline",
-                spacing: "sm",
-                contents: [
-                  {
-                    type: "text",
-                    text: "Place",
-                    color: "#aaaaaa",
-                    size: "xs",
-                    flex: 1
-                  },
-                  {
-                    type: "text",
-                    text: `${location}`,
-                    wrap: true,
-                    color: "#666666",
-                    size: "sm",
-                    flex: 5
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      styles: {
-        body: {
-          backgroundColor: "#d5e1e1"
-        }
-      }
-    }
-  });
-
+  // }); 
+  await lineClient.pushMessage(userId, flexMessage(data.action, "Device", data.deviceName, "Place", location));
 });
 //===================================== Line Bot =====================================//
 const config = {
@@ -171,6 +95,7 @@ async function handleEvent(event) {
       const userId = event.source.userId;
       const data = event.postback.data;
       console.log("postback:", data);
+      console.log(event.source);
 
       if (data === "action=open") {
         return  lineClient.pushMessage(userId, { type: 'text', text: data });
@@ -212,3 +137,83 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`listening on ${port}`);
 });
+
+
+function flexMessage(title, item1, info1, item2, info2) {
+  return {
+    type: "flex",
+    altText: `${title}`,
+    contents: {
+      type: "bubble",
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: `${title}`,
+            weight: "bold",
+            size: "xl"
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            margin: "lg",
+            spacing: "sm",
+            contents: [
+              {
+                type: "box",
+                layout: "baseline",
+                spacing: "sm",
+                contents: [
+                  {
+                    type: "text",
+                    text: `${item1}`,// 固定文字
+                    color: "#aaaaaa",
+                    size: "xs",
+                    flex: 1
+                  },
+                  {
+                    type: "text",
+                    text: `${info1}`,
+                    wrap: true,
+                    color: "#666666",
+                    size: "sm",
+                    flex: 5
+                  }
+                ]
+              },
+              {
+                type: "box",
+                layout: "baseline",
+                spacing: "sm",
+                contents: [
+                  {
+                    type: "text",
+                    text: `${item2}`,// 固定文字
+                    color: "#aaaaaa",
+                    size: "xs",
+                    flex: 1
+                  },
+                  {
+                    type: "text",
+                    text: `${info2}`,
+                    wrap: true,
+                    color: "#666666",
+                    size: "sm",
+                    flex: 5
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      styles: {
+        body: {
+          backgroundColor: "#d5e1e1"
+        }
+      }
+    }
+  };
+}
