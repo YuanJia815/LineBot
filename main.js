@@ -173,15 +173,15 @@ async function handleEvent(event) {
       console.log("postback:", data);
 
       if (data === "action=open") {
-        return lineClient.replyMessage(event.replyToken, data);
+        return  lineClient.pushMessage(userId, { type: 'text', text: data });
       }
 
       if (data === "action=stop") {
-        return lineClient.replyMessage(event.replyToken, data);
+        return  lineClient.pushMessage(userId, { type: 'text', text: data });
       }
 
       if (data === "action=close") {
-        return lineClient.replyMessage(event.replyToken, data);
+        return  lineClient.pushMessage(userId, { type: 'text', text: data });
       }
     }
 
@@ -192,10 +192,10 @@ async function handleEvent(event) {
   }
 }
 
-    // return lineClient.replyMessage(event.replyToken, {
-    //   type: 'text',
-    //   text: msg
-    // });
+// return lineClient.replyMessage(event.replyToken, {
+//   type: 'text',
+//   text: msg
+// });
 
 // 主動發送
 async function pushMessage(userId, text) {
