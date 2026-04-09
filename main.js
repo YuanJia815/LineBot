@@ -89,7 +89,22 @@ app.post('/callback', line.middleware(config), async (req, res) => {
 });
 
 //================ 處理事件 =================//
+const userCooldown = new Map();
+const COOLDOWN_TIME = 2000; // 2 秒
+
 async function handleEvent(event) {
+  const userId = event.source.userId;
+  const now = Date.now();
+
+  if (userCooldown.has(userId)) {// 如果有紀錄，檢查時間
+    const lastTime = userCooldown.get(userId);
+
+    if (now - lastTime < COOLDOWN_TIME) {
+      console.log("⚠️ 點太快，忽略");
+      return;
+    }
+  }
+  userCooldown.set(userId, now); // 更新時間
 
   //========== 訊息事件 ==========
   if (event.type === 'message' && event.message.type === 'text') {
@@ -97,12 +112,12 @@ async function handleEvent(event) {
     const userId = event.source.userId;
 
     if (msg.includes('test')) {
-        const messages = Array.from({ length: 3 }, (_, i) => ({
-          type: 'text',
-          text: (i + 1).toString()
-        }));
-        return lineClient.replyMessage(event.replyToken, messages);
-      }
+      const messages = Array.from({ length: 3 }, (_, i) => ({
+        type: 'text',
+        text: (i + 1).toString()
+      }));
+      return lineClient.replyMessage(event.replyToken, messages);
+    }
 
     return Promise.resolve(null);
   }
