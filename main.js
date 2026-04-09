@@ -158,7 +158,86 @@ async function getUserProfileName(userId) {
     return "Unknown";
   }
 }
-
+//===================================== Rich Menu Setup =====================================//
+async function flexMessage(title, item1, info1, item2, info2) {
+  return {
+    type: "flex",
+    altText: `${title}`,
+    contents: {
+      type: "bubble",
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: [
+          {
+            type: "text",
+            text: `${title}`,
+            weight: "bold",
+            size: "xl"
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            margin: "lg",
+            spacing: "sm",
+            contents: [
+              {
+                type: "box",
+                layout: "baseline",
+                spacing: "sm",
+                contents: [
+                  {
+                    type: "text",
+                    text: `${item1}`,// 固定文字
+                    color: "#aaaaaa",
+                    size: "xs",
+                    flex: 1
+                  },
+                  {
+                    type: "text",
+                    text: `${info1}`,
+                    wrap: true,
+                    color: "#666666",
+                    size: "sm",
+                    flex: 5
+                  }
+                ]
+              },
+              {
+                type: "box",
+                layout: "baseline",
+                spacing: "sm",
+                contents: [
+                  {
+                    type: "text",
+                    text: `${item2}`,// 固定文字
+                    color: "#aaaaaa",
+                    size: "xs",
+                    flex: 1
+                  },
+                  {
+                    type: "text",
+                    text: `${info2}`,
+                    wrap: true,
+                    color: "#666666",
+                    size: "sm",
+                    flex: 5
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      styles: {
+        body: {
+          backgroundColor: "#d5e1e1"
+        }
+      }
+    }
+  };
+}
+//===================================== Get Now Time =====================================//
 async function getNowTime() {
   const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Taipei" }));
   return `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
