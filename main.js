@@ -20,6 +20,7 @@ mqttClient.on("connect", () => {
 mqttClient.on('reconnect', () => { console.log('🔄 reconnecting...'); });
 mqttClient.on("error", (err) => { console.log("MQTT error:", err); });
 
+//===================================== MQTT Message Handler =====================================//
 mqttClient.on("message", async (topic, message) => {
   const msg = message.toString();
 
@@ -32,7 +33,7 @@ mqttClient.on("message", async (topic, message) => {
   }
 
   const userId = process.env.USER_ID;// 從環境變數讀取 userId
-  if (!userId) return; 
+  if (!userId) return;
 
   const location = data.location
     .replace(/\n/g, ' ')
@@ -141,42 +142,60 @@ app.post('/callback', line.middleware(config), (req, res) => {
 //--------------------------------- event handler
 async function handleEvent(event) {
   try {
-    if (event.type !== 'message' || event.message.type !== 'text') {
+    //====================================== 文字訊息處理 =====================================//
+    if (event.type === 'message' && event.message.type === 'text') {
+      const msg = event.message.text;
+
+      if (msg.includes('test')) {
+        const messages = Array.from({ length: 3 }, (_, i) => ({
+          type: 'text',
+          text: (i + 1).toString()
+        }));
+        return lineClient.replyMessage(event.replyToken, messages);
+      }
+      if (msg.includes('open')) {
+        const userId = event.source.userId;
+        mqttClient.publish('gate/open', '');
+        return
+      }
+      if (msg.includes('close')) {
+        const userId = event.source.userId;
+        mqttClient.publish('gate/close', '');
+        return
+      }
       return Promise.resolve(null);
     }
-    const msg = event.message.text;
 
-    if (msg.includes('test')) {
-      const messages = Array.from({ length: 3 }, (_, i) => ({
-        type: 'text',
-        text: (i + 1).toString()
-      }));
-      return lineClient.replyMessage(event.replyToken, messages);
-    }
-
-    if (msg.includes('open')) {
+    //====================================== Postback 事件處理 =====================================//
+    if (event.type === 'postback') {
       const userId = event.source.userId;
+      const data = event.postback.data;
+      console.log("postback:", data);
 
-      mqttClient.publish('gate/open', '');
-      return
+      if (data === "action=open") {
+        return lineClient.replyMessage(event.replyToken, data);
+      }
+
+      if (data === "action=stop") {
+        return lineClient.replyMessage(event.replyToken, data);
+      }
+
+      if (data === "action=close") {
+        return lineClient.replyMessage(event.replyToken, data);
+      }
     }
-    if (msg.includes('close')) {
-      const userId = event.source.userId;
 
-      mqttClient.publish('gate/close', '');
-      return
-    }
-
-    return
-    // return lineClient.replyMessage(event.replyToken, {
-    //   type: 'text',
-    //   text: msg
-    // });
+    return Promise.resolve(null);
   } catch (err) {
     console.error("handleEvent error:", err);
     return Promise.resolve(null); // 避免整個 webhook 爆掉
   }
 }
+
+    // return lineClient.replyMessage(event.replyToken, {
+    //   type: 'text',
+    //   text: msg
+    // });
 
 // 主動發送
 async function pushMessage(userId, text) {
