@@ -2,6 +2,7 @@ import dotenv from 'dotenv'
 import express from 'express'
 import line from '@line/bot-sdk'
 import mqtt from 'mqtt'
+import axios from 'axios'
 
 dotenv.config();
 const app = express();
@@ -35,17 +36,20 @@ mqttClient.on("message", async (topic, message) => {
   const userId = process.env.USER_ID;// 從環境變數讀取 userId
   if (!userId) return;
 
-  const location = data.location
-    .replace(/\n/g, ' ')
-    .replace(/\b\d{3,6}\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  if (data?.isLineUser || false) {//==================== 來自 Line User 的動作
+    if (data.userId != userId) {
+      await lineClient.pushMessage(data.userId, flexMessage(data.action, "Name", data.displayName, "Time", data.time));
+    }
+    await lineClient.pushMessage(userId, flexMessage(data.action, "Name", data.displayName, "UserId", data.userId));
+  }
+  else {//=================================== 來自apple shortcuts的動作
+    const location = data.location
+      .replace(/\n/g, ' ').replace(/\b\d{3,6}\b/g, '')
+      .replace(/\s+/g, ' ').trim();
 
-  // await lineClient.pushMessage(userId, {
-  //   type: 'text',
-  //   text: `[ ${topic} ]  Device: ${data.deviceName}\nAction: ${data.action}\n${location}`
-  // }); 
-  await lineClient.pushMessage(userId, flexMessage(data.action, "Device", data.deviceName, "Place", location));
+    await lineClient.pushMessage(userId, flexMessage(data.action, "Device", data.deviceName, "Place", location));
+  }
+
 });
 //===================================== Line Bot =====================================//
 const config = {
@@ -95,18 +99,31 @@ async function handleEvent(event) {
       const userId = event.source.userId;
       const data = event.postback.data;
       console.log("postback:", data);
-      console.log(event.source);
-
-      if (data === "action=open") {
-        return  lineClient.pushMessage(userId, { type: 'text', text: data });
+      const actions = {
+        "action=open": "開 鐵門",
+        "action=close": "關 鐵門",
+        "action=stop": "鐵門 暫停"
       }
 
-      if (data === "action=stop") {
-        return  lineClient.pushMessage(userId, { type: 'text', text: data });
+      const userInfo = {
+        isLineUser: true,
+        action: actions[data] || "未知動作",
+        userId: userId,
+        displayName: await getUserProfileName(userId),
+        time: await getNowTime()
       }
-
-      if (data === "action=close") {
-        return  lineClient.pushMessage(userId, { type: 'text', text: data });
+      switch (data) {
+        case "action=open":
+          client.publish("gate/open", userInfo)
+          break
+        case "action=close":
+          client.publish("gate/close", userInfo)
+          break
+        case "action=stop":
+          client.publish("gate/stop", userInfo)
+          break
+        default:
+          throw new Error("Invalid action")
       }
     }
 
@@ -121,7 +138,10 @@ async function handleEvent(event) {
 //   type: 'text',
 //   text: msg
 // });
-
+// await lineClient.pushMessage(userId, {
+//   type: 'text',
+//   text: `[ ${topic} ]  Device: ${data.deviceName}\nAction: ${data.action}\n${location}`
+// }); 
 // 主動發送
 async function pushMessage(userId, text) {
   await lineClient.pushMessage(userId, {
@@ -138,8 +158,21 @@ app.listen(port, () => {
   console.log(`listening on ${port}`);
 });
 
+//===================================== Get User Profile =====================================//
+async function getUserProfileName(userId) {
+  const res = await axios.get(
+    `https://api.line.me/v2/bot/profile/${userId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`
+      }
+    }
+  );
 
-function flexMessage(title, item1, info1, item2, info2) {
+  return res.data.displayName;
+}
+//===================================== Rich Menu Setup =====================================//
+async function flexMessage(title, item1, info1, item2, info2) {
   return {
     type: "flex",
     altText: `${title}`,
@@ -216,4 +249,17 @@ function flexMessage(title, item1, info1, item2, info2) {
       }
     }
   };
+}
+
+//===================================== Get Now Time =====================================//
+async function getNowTime() {
+  const now = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Taipei" })
+  );
+
+  return `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')
+    }/${String(now.getDate()).padStart(2, '0')
+    }  ${String(now.getHours()).padStart(2, '0')
+    }:${String(now.getMinutes()).padStart(2, '0')
+    }`;
 }
