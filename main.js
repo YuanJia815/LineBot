@@ -71,10 +71,14 @@ mqttClient.on("message", async (topic, message) => {
     if (data?.isLineUser) {
       // 來自 LINE 使用者
       if (data.userId !== userId) {
-        enqueueMessage(userId, flexMessage(safe(data.action), "Name", safe(data.displayName), "Time", safe(data.time)));
+        await lineClient.pushMessage(data.userId,
+          flexMessage(safe(data.action), "Name", safe(data.displayName), "Time", safe(data.time))
+        );
       }
 
-      enqueueMessage(userId, flexMessage(safe(data.action), "Name", safe(data.displayName), "UserId", safe(data.userId)));
+      await lineClient.pushMessage(userId,
+        flexMessage(safe(data.action), "Name", safe(data.displayName), "UserId", safe(data.userId))
+      );
 
     } else {
       // 來自 Shortcut
@@ -90,6 +94,9 @@ mqttClient.on("message", async (topic, message) => {
     }
   } catch (err) {
     console.error("pushMessage error:", err);
+    console.log("status:", err.response?.status);
+    console.log("headers:", err.response?.headers);
+    console.log("retry-after:", err.response?.headers?.['retry-after']);
   }
 });
 const safe = (v) => v ? String(v) : "-";
