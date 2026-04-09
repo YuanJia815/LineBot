@@ -3,9 +3,17 @@ import express from 'express'
 import line from '@line/bot-sdk'
 import mqtt from 'mqtt'
 import axios from 'axios'
+import rateLimit from 'express-rate-limit'
 
 dotenv.config();
 const app = express();
+//===================================== Rate Limiting =====================================//
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 2 minutes
+  max: 60, // limit each IP to 60 requests per windowMs
+})
+app.use(limiter)
+app.use('/callback', limiter)
 
 //================ MQTT =================//
 const mqttClient = mqtt.connect(process.env.MQTT_URL, {
