@@ -115,7 +115,7 @@ async function handleEvent(event) {
     const actionMap = {
       "action=open": "開 鐵門",
       "action=close": "關 鐵門",
-      "action=stop": "鐵門 暫停"
+      "action=stop": "暫停 鐵門"
     };
 
     const actionKey = data.split("=")[1];
