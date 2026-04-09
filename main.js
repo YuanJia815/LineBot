@@ -3,19 +3,13 @@ import express from 'express'
 import line from '@line/bot-sdk'
 import mqtt from 'mqtt'
 import axios from 'axios'
-import rateLimit from 'express-rate-limit'
+/*
 
+ */
 dotenv.config();
 const app = express();
-//===================================== Rate Limiting =====================================//
-const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 2 minutes
-  max: 60, // limit each IP to 60 requests per windowMs
-})
-app.use(limiter)
-app.use('/callback', limiter)
 
-//================ MQTT =================//
+//========================= MQTT connection =====================//
 const mqttClient = mqtt.connect(process.env.MQTT_URL, {
   username: process.env.MQTT_USERNAME,
   password: process.env.MQTT_PASSWORD,
@@ -32,7 +26,32 @@ mqttClient.on("error", (err) => {
   console.error("❌ MQTT error:", err);
 });
 
-//================ MQTT 接收 =================//
+//===================================== Message Queue =====================================//
+const messageQueue = [];
+let isSending = false;
+
+function enqueueMessage(userId, message) {
+  messageQueue.push({ userId, message });
+  processQueue();
+}
+
+async function processQueue() {
+  if (isSending) return;
+  isSending = true;
+
+  while (messageQueue.length > 0) {
+    const { userId, message } = messageQueue.shift();
+
+    try {
+      await lineClient.pushMessage(userId, message);
+      await new Promise(r => setTimeout(r, 200)); // ⬅️ 限速
+    } catch (err) {
+      console.error("pushMessage error:", err.message);
+    }
+  }
+  isSending = false;
+}
+//======================== MQTT 接收 =====================//
 mqttClient.on("message", async (topic, message) => {
   const msg = message.toString();
   console.log("📩 MQTT:", topic, msg);
@@ -52,14 +71,10 @@ mqttClient.on("message", async (topic, message) => {
     if (data?.isLineUser) {
       // 來自 LINE 使用者
       if (data.userId !== userId) {
-        await lineClient.pushMessage(data.userId,
-          flexMessage(safe(data.action), "Name", safe(data.displayName), "Time", safe(data.time))
-        );
+        enqueueMessage(userId, flexMessage(safe(data.action), "Name", safe(data.displayName), "Time", safe(data.time)));
       }
 
-      await lineClient.pushMessage(userId,
-        flexMessage(safe(data.action), "Name", safe(data.displayName), "UserId", safe(data.userId))
-      );
+      enqueueMessage(userId, flexMessage(safe(data.action), "Name", safe(data.displayName), "UserId", safe(data.userId)));
 
     } else {
       // 來自 Shortcut
