@@ -45,12 +45,12 @@ mqttClient.on("message", async (topic, message) => {
       // 來自 LINE 使用者
       if (data.userId !== userId) {
         await lineClient.pushMessage(data.userId,
-          flexMessage(data.action, "Name", data.displayName, "Time", data.time)
+          flexMessage(safe(data.action), "Name", safe(data.displayName), "Time", safe(data.time))
         );
       }
 
       await lineClient.pushMessage(userId,
-        flexMessage(data.action, "Name", data.displayName, "UserId", data.userId)
+        flexMessage(safe(data.action), "Name", safe(data.displayName), "UserId", safe(data.userId))
       );
 
     } else {
@@ -62,14 +62,14 @@ mqttClient.on("message", async (topic, message) => {
         .trim();
 
       await lineClient.pushMessage(userId,
-        flexMessage(data.action || "未知", "Device", data.deviceName || "--", "Place", location)
+        flexMessage(safe(data.action), "Device", safe(data.deviceName), "Place", safe(location))
       );
     }
   } catch (err) {
     console.error("pushMessage error:", err);
   }
 });
-
+const safe = (v) => v ? String(v) : "-";
 //================ LINE BOT =================//
 const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
@@ -159,7 +159,7 @@ async function getUserProfileName(userId) {
   }
 }
 //===================================== Rich Menu Setup =====================================//
-async function flexMessage(title, item1, info1, item2, info2) {
+function flexMessage(title, item1, info1, item2, info2) {
   return {
     type: "flex",
     altText: `${title}`,
