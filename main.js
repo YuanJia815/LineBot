@@ -177,7 +177,7 @@ async function handleEvent(event) {
 
     // ✅ 正確 publish
     mqttClient.publish(`gate/${actionKey}`, JSON.stringify(userInfo));
-    
+    console.log("📤 MQTT published:", `gate/${actionKey}`, JSON.stringify(userInfo));
   }
 }
 
