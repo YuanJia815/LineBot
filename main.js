@@ -171,7 +171,6 @@ async function handleEvent(event) {
       action: actionMap[data] || "未知",
       userId,
       displayName: displayName || "Unknown",
-      pictureUrl: pictureUrl || null,
       time: await getNowTime()
     };
 
