@@ -165,16 +165,19 @@ async function handleEvent(event) {
 
     const actionKey = data.split("=")[1];
 
+    const { displayName, pictureUrl } = await getUserProfileName(userId);
     const userInfo = {
       isLineUser: true,
       action: actionMap[data] || "未知",
       userId,
-      displayName: await getUserProfileName(userId),
+      displayName: displayName || "Unknown",
+      pictureUrl: pictureUrl || null,
       time: await getNowTime()
     };
 
     // ✅ 正確 publish
     mqttClient.publish(`gate/${actionKey}`, JSON.stringify(userInfo));
+    
   }
 }
 
@@ -198,9 +201,9 @@ async function getUserProfileName(userId) {
         }
       }
     );
-    return res.data.displayName;
+    return { displayName: res.data.displayName, pictureUrl: res.data.pictureUrl };
   } catch {
-    return "Unknown";
+    return { displayName: "Unknown", pictureUrl: null };
   }
 }
 //===================================== Rich Menu Setup =====================================//
