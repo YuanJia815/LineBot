@@ -55,6 +55,7 @@ async function processQueue() {
 mqttClient.on("message", async (topic, message) => {
   const msg = message.toString();
   console.log("📩 MQTT:", topic, msg);
+  if (topic !== "gate/status") return;
 
   let data;
   try {
@@ -70,11 +71,11 @@ mqttClient.on("message", async (topic, message) => {
   try {
     if (data?.isLineUser) {
       // 來自 LINE 使用者
-      if (data.userId !== userId) {
+/*       if (data.userId !== userId) {
         await lineClient.pushMessage(data.userId,
           flexMessage(safe(data.action), "Name", safe(data.displayName), "Time", safe(data.time))
         );
-      }
+      } */
 
       await lineClient.pushMessage(userId,
         flexMessage(safe(data.action), "Name", safe(data.displayName), "UserId", safe(data.userId))
@@ -175,9 +176,81 @@ async function handleEvent(event) {
 
     // ✅ 正確 publish
     mqttClient.publish(`gate/${actionKey}`, JSON.stringify(userInfo));
-    
+
   }
 }
+
+//===================================== MQTT Publish Function =====================//
+// ✅ 統一由這裡發送 MQTT（避免重複寫 publish）
+function publishGateCommand(action, userInfo) {
+  if (!mqttClient.connected) {
+    throw new Error('MQTT not connected')
+  }
+
+  // 🔥 對應 ESP32 topic 分離設計  PARTIAL:
+  switch (action) {
+    case "open":
+      mqttClient.publish("gate/open", userInfo)
+      break
+    case "close":
+      mqttClient.publish("gate/close", userInfo)
+      break
+    case "stop":
+      mqttClient.publish("gate/stop", userInfo)
+      break
+    case "pcpower":
+      mqttClient.publish("pc/power", userInfo)
+      break
+    default:
+      throw new Error("Invalid action")
+  }
+}
+//===================================== Middleware（API KEY 驗證） ==============================//
+function authMiddleware(req, res, next) {
+  const apiKey = req.headers['x-api-key']
+
+  if (apiKey !== process.env.API_KEY) {
+    return res.status(401).send('Unauthorized access')
+  }
+  next()
+}
+//================================ API Routes =============================//
+
+// 健康檢查
+app.get('/test', (req, res) => {
+  res.send('人生就像泡麵三分鐘熱度然後後悔又開始懷疑')
+})
+
+// ✅ 改成 RESTful API（更清楚）
+app.use(express.json())
+app.post('/gate/:action', authMiddleware, (req, res) => {
+  const action = req.params.action.toLowerCase()
+  const { user } = req.body;
+
+  const config = JSON.parse(process.env.CONFIG);
+  const isAccessLocation = new RegExp(config.loc, 'i').test(user.location);
+  const isAuthorizedDevice = config.dvc.includes(user.deviceName);
+
+  // if (!isAccessLocation || !isAuthorizedDevice) {
+  //   return res.status(401).send('Unauthorized access')
+  // }
+
+  const userInfo = JSON.stringify(user) || JSON.stringify({ user: "Unknown" });
+  console.log(`🔔 Received command: ${action} from user: ${user.action}`);
+
+  try {
+    publishGateCommand(action, userInfo)
+
+    res.send(`
+      <h1 style="font-size:50px;">
+        Gate ${action.toUpperCase()}
+      </h1>
+    `)
+
+  } catch (err) {
+    res.status(500).send(err.message)
+  }
+})
 
 //================ Server =================//
 const port = process.env.PORT || 3000;
