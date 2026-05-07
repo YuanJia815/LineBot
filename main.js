@@ -338,6 +338,10 @@ function flexMessage(title, item1, info1, item2, info2) {
 }
 //===================================== Get Now Time =====================================//
 async function getNowTime() {
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Taipei" }));
-  return `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const now = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Taipei" })
+  );
+  const weekDays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+
+  return `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${weekDays[now.getDay()]}`;
 }
