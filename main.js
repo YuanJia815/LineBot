@@ -3,9 +3,7 @@ import express from 'express'
 import line from '@line/bot-sdk'
 import mqtt from 'mqtt'
 import axios from 'axios'
-/*
-
- */
+ 
 dotenv.config();
 const app = express();
 
@@ -26,35 +24,11 @@ mqttClient.on("error", (err) => {
   console.error("❌ MQTT error:", err);
 });
 
-//===================================== Message Queue =====================================//
-const messageQueue = [];
-let isSending = false;
-
-function enqueueMessage(userId, message) {
-  messageQueue.push({ userId, message });
-  processQueue();
-}
-
-async function processQueue() {
-  if (isSending) return;
-  isSending = true;
-
-  while (messageQueue.length > 0) {
-    const { userId, message } = messageQueue.shift();
-
-    try {
-      await lineClient.pushMessage(userId, message);
-      await new Promise(r => setTimeout(r, 200)); // ⬅️ 限速
-    } catch (err) {
-      console.error("pushMessage error:", err.message);
-    }
-  }
-  isSending = false;
-}
 //======================== MQTT 接收 =====================//
 mqttClient.on("message", async (topic, message) => {
   const msg = message.toString();
   console.log("📩 MQTT:", topic, msg);
+
   if (topic !== "gate/status") return;
 
   let data;
@@ -78,19 +52,19 @@ mqttClient.on("message", async (topic, message) => {
       } */
 
       await lineClient.pushMessage(userId,
-        flexMessage(safe(data.action), "Name", safe(data.displayName), "UserId", safe(data.userId))
+        flexMessage(data.action, "Name", data.displayName, "UserId", data.userId)
       );
 
     } else {
       // 來自 Shortcut
-      const location = (data.location || "")
+      const location = (data?.location || await getNowTime())
         .replace(/\n/g, ' ')
         .replace(/\b\d{3,6}\b/g, '')
         .replace(/\s+/g, ' ')
         .trim();
 
       await lineClient.pushMessage(userId,
-        flexMessage(safe(data.action), "Device", safe(data.deviceName), "Place", safe(location))
+        flexMessage(data.action, "Device", data.deviceName, "Other", location)
       );
     }
   } catch (err) {
@@ -100,7 +74,7 @@ mqttClient.on("message", async (topic, message) => {
     console.log("retry-after:", err.response?.headers?.['retry-after']);
   }
 });
-const safe = (v) => v ? String(v) : "-";
+
 //================ LINE BOT =================//
 const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
@@ -177,6 +151,9 @@ async function handleEvent(event) {
     // ✅ 正確 publish
     mqttClient.publish(`gate/${actionKey}`, JSON.stringify(userInfo));
 
+    return lineClient.replyMessage(event.replyToken,
+        flexMessage(userInfo.action, "Name", userInfo.displayName, "Time", userInfo.time)
+    );
   }
 }
 
@@ -216,11 +193,6 @@ function authMiddleware(req, res, next) {
 }
 //================================ API Routes =============================//
 
-// 健康檢查
-app.get('/test', (req, res) => {
-  res.send('人生就像泡麵三分鐘熱度然後後悔又開始懷疑')
-})
-
 // ✅ 改成 RESTful API（更清楚）
 app.use(express.json())
 app.post('/gate/:action', authMiddleware, (req, res) => {
@@ -228,8 +200,8 @@ app.post('/gate/:action', authMiddleware, (req, res) => {
   const { user } = req.body;
 
   const config = JSON.parse(process.env.CONFIG);
-  const isAccessLocation = new RegExp(config.loc, 'i').test(user.location);
-  const isAuthorizedDevice = config.dvc.includes(user.deviceName);
+  const isAccessLocation = new RegExp(config.loc, 'i').test(user?.location);
+  const isAuthorizedDevice = config.dvc.includes(user?.deviceName);
 
   // if (!isAccessLocation || !isAuthorizedDevice) {
   //   return res.status(401).send('Unauthorized access')
@@ -250,6 +222,10 @@ app.post('/gate/:action', authMiddleware, (req, res) => {
   } catch (err) {
     res.status(500).send(err.message)
   }
+})
+
+app.get('/test', (req, res) => {// 健康檢查
+  res.send('人生就像泡麵三分鐘熱度然後後悔又開始懷疑')
 })
 
 //================ Server =================//
