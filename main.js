@@ -3,7 +3,7 @@ import express from 'express'
 import line from '@line/bot-sdk'
 import mqtt from 'mqtt'
 import axios from 'axios'
- 
+
 dotenv.config();
 const app = express();
 
@@ -45,11 +45,11 @@ mqttClient.on("message", async (topic, message) => {
   try {
     if (data?.isLineUser) {
       // 來自 LINE 使用者
-/*       if (data.userId !== userId) {
-        await lineClient.pushMessage(data.userId,
-          flexMessage(safe(data.action), "Name", safe(data.displayName), "Time", safe(data.time))
-        );
-      } */
+      // if (data.userId !== userId) {
+      //   await lineClient.pushMessage(data.userId,
+      //     flexMessage(safe(data.action), "Name", safe(data.displayName), "Time", safe(data.time))
+      //   );
+      // }
 
       await lineClient.pushMessage(userId,
         flexMessage(data.action, "Name", data.displayName, "UserId", data.userId)
@@ -59,7 +59,7 @@ mqttClient.on("message", async (topic, message) => {
       // 來自 Shortcut
       const location = (data?.location)
         .replace(/\n/g, ' ')
-        .replace(/\b\d{3,6}\b/g, '')
+        .replace(/\b\d{6}\b/g, '')
         .replace(/\s+/g, ' ')
         .trim();
 
@@ -151,9 +151,13 @@ async function handleEvent(event) {
     // ✅ 正確 publish
     mqttClient.publish(`gate/${actionKey}`, JSON.stringify(userInfo));
 
-    return lineClient.replyMessage(event.replyToken,
+    const myUserId = process.env.USER_ID;
+
+    if (userId !== myUserId) {
+      return lineClient.replyMessage(event.replyToken,
         flexMessage(userInfo.action, "Name", userInfo.displayName, "Time", userInfo.time)
-    );
+      );
+    }
   }
 }
 
