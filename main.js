@@ -57,14 +57,14 @@ mqttClient.on("message", async (topic, message) => {
 
     } else {
       // 來自 Shortcut
-      const location = (data?.location || await getNowTime())
+      const location = (data?.location)
         .replace(/\n/g, ' ')
         .replace(/\b\d{3,6}\b/g, '')
         .replace(/\s+/g, ' ')
         .trim();
 
       await lineClient.pushMessage(userId,
-        flexMessage(data.action, "Device", data.deviceName, "Other", location)
+        flexMessage(data.action, "Device", data.deviceName, "Other", location || await getNowTime())
       );
     }
   } catch (err) {
