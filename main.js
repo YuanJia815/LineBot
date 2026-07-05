@@ -15,7 +15,7 @@ const mqttClient = mqtt.connect(process.env.MQTT_URL, {
 });
 
 mqttClient.on("connect", () => {
-  console.log("✅ MQTT connected");
+  console.log("✅Render MQTT connected");
   mqttClient.subscribe('gate/status');
   mqttClient.subscribe('esp32/status');
   mqttClient.subscribe('button/status');
@@ -28,7 +28,7 @@ mqttClient.on("error", (err) => {
 //======================== MQTT 接收 =====================//
 mqttClient.on("message", async (topic, message) => {
   const msg = message.toString();
-  
+
   if (topic == "esp32/status") {
     console.log("ESP32: ", msg);
   }
@@ -186,6 +186,9 @@ function publishGateCommand(action, userInfo) {
     case "pcpower":
       mqttClient.publish("pc/power", userInfo)
       break
+    case "restart"://  ESP32 的重啟指令
+      mqttClient.publish("esp32/restart", userInfo)
+      break
     default:
       throw new Error("Invalid action")
   }
@@ -224,6 +227,27 @@ app.post('/gate/:action', authMiddleware, (req, res) => {
     res.send(`
       <h1 style="font-size:50px;">
         Gate ${action.toUpperCase()}
+      </h1>
+    `)
+
+  } catch (err) {
+    res.status(500).send(err.message)
+  }
+})
+//==================================== ESP32 Routes =============================//
+app.post('/esp32/:action', authMiddleware, (req, res) => {
+  const action = req.params.action.toLowerCase()
+  const { user } = req.body;
+
+  const userInfo = JSON.stringify(user) || JSON.stringify({ user: "Unknown" });
+  console.log(`🔔 Received command: ${action} from user: ${user.action}`);
+
+  try {
+    publishGateCommand(action, userInfo)
+
+    res.send(`
+      <h1 style="font-size:50px;">
+        ESP32 ${action.toUpperCase()}
       </h1>
     `)
 
