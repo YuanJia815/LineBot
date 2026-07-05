@@ -17,6 +17,7 @@ const mqttClient = mqtt.connect(process.env.MQTT_URL, {
 mqttClient.on("connect", () => {
   console.log("✅ MQTT connected");
   mqttClient.subscribe('gate/status');
+  mqttClient.subscribe('esp32/status');
   mqttClient.subscribe('button/status');
 });
 
@@ -27,51 +28,54 @@ mqttClient.on("error", (err) => {
 //======================== MQTT 接收 =====================//
 mqttClient.on("message", async (topic, message) => {
   const msg = message.toString();
-  console.log("📩 MQTT:", topic, msg);
-
-  if (topic !== "gate/status") return;
-
-  let data;
-  try {
-    data = JSON.parse(msg);
-  } catch {
-    console.error("JSON parse error");
-    return;
+  
+  if (topic == "esp32/status") {
+    console.log("ESP32: ", msg);
   }
+  else if (topic == "gate/status") {
+    console.log("📩 ", topic, msg);
 
-  const userId = process.env.USER_ID;
-  if (!userId) return;
-
-  try {
-    if (data?.isLineUser) {
-      // 來自 LINE 使用者
-      // if (data.userId !== userId) {
-      //   await lineClient.pushMessage(data.userId,
-      //     flexMessage(safe(data.action), "Name", safe(data.displayName), "Time", safe(data.time))
-      //   );
-      // }
-
-      await lineClient.pushMessage(userId,
-        flexMessage(data.action, "Name", data.displayName, "UserId", data.userId)
-      );
-
-    } else {
-      // 來自 Shortcut
-      const location = (data?.location)
-        ?.replace(/\n/g, ' ')
-        ?.replace(/\b\d{3,6}\b/g, '')
-        ?.replace(/\s+/g, ' ')
-        ?.trim();
-
-      await lineClient.pushMessage(userId,
-        flexMessage(data.action, "Device", data.deviceName, "Other", location || await getNowTime())
-      );
+    let data;
+    try {
+      data = JSON.parse(msg);
+    } catch {
+      console.error("JSON parse error");
+      return;
     }
-  } catch (err) {
-    console.error("pushMessage error:", err);
-    console.log("status:", err.response?.status);
-    console.log("headers:", err.response?.headers);
-    console.log("retry-after:", err.response?.headers?.['retry-after']);
+
+    const userId = process.env.USER_ID;
+    if (!userId) return;
+
+    try {
+      if (data?.isLineUser) {
+        // 來自 LINE 使用者
+        // if (data.userId !== userId) {
+        //   await lineClient.pushMessage(data.userId,
+        //     flexMessage(safe(data.action), "Name", safe(data.displayName), "Time", safe(data.time))
+        //   );
+        // }
+
+        await lineClient.pushMessage(userId,
+          flexMessage(data.action, "Name", data.displayName, "UserId", data.userId)
+        );
+      } else {
+        // 來自 Shortcut
+        const location = (data?.location)
+          ?.replace(/\n/g, ' ')
+          ?.replace(/\b\d{3,6}\b/g, '')
+          ?.replace(/\s+/g, ' ')
+          ?.trim();
+
+        await lineClient.pushMessage(userId,
+          flexMessage(data.action, "Device", data.deviceName, "Other", location || await getNowTime())
+        );
+      }
+    } catch (err) {
+      console.error("pushMessage error:", err);
+      console.log("status:", err.response?.status);
+      console.log("headers:", err.response?.headers);
+      console.log("retry-after:", err.response?.headers?.['retry-after']);
+    }
   }
 });
 
@@ -152,7 +156,7 @@ async function handleEvent(event) {
     mqttClient.publish(`gate/${actionKey}`, JSON.stringify(userInfo));
 
     const myUserId = process.env.USER_ID;
-    
+
     if (userId !== myUserId) {
       return lineClient.replyMessage(event.replyToken,
         flexMessage(userInfo.action, "Name", userInfo.displayName, "Time", userInfo.time)
